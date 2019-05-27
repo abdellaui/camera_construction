@@ -1,11 +1,12 @@
 from options import SplitOptions
 import os
 import numpy as np
-from datetime import datetime
+import datetime
 
 opt = SplitOptions().parse()
 root = opt.dataroot
-datafile = os.path.join(root , "dataset.txt")
+dataset = opt.dataset
+datafile = os.path.join(root , os.path.join(root, dataset))
 valid_size = opt.valid_size
 seed = opt.seed
 shuffle = opt.shuffle
@@ -16,8 +17,8 @@ def storeData(data, dataset):
         header = "{} dataset created on {} \nImageFile, Camera Position [X Y Z W P Q R] \n\n".format(dataset, now)
         file.write(header)
         for item in data:
-            stringLine = ' '.join(str(x) for x in item)
-            file.write(stringLine)
+            line = ' '.join(str(x) for x in item)
+            file.write(line)
         file.close()
     
 def main():
@@ -40,9 +41,9 @@ def main():
 
     
     storeData(train_data, "train")
-    storeData(valid_data, "valid")
+    storeData(valid_data, "val")
 
-    print("Total: {} \t test: {} valid: {}".format(num_train, split, num_train-split))
+    print("total: {} \t test: {} \t val: {}".format(num_train, split, num_train-split))
         
     pass
 

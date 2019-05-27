@@ -12,6 +12,7 @@ bl_info = {
 import bpy
 import math
 import os
+import datetime
 
 from bpy.app.handlers import persistent
 
@@ -43,21 +44,7 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
     
 class Utils:    
-    @staticmethod
-    def lenghtOfMesh(obj):
-        length = 0
-        if obj and obj.type == "CURVE":
-            mesh = obj.to_mesh(bpy.context.scene, False, "PREVIEW")
-            obj = bpy.data.objects.new("HIYARI", mesh)
-            bpy.context.scene.objects.link(obj) 
-            ve = mesh.vertices
-            for i in mesh.edges:
-                distance = ve[i.vertices[0]].co - ve[i.vertices[1]].co
-                length += distance.length
-            length = round(length,4)       
-            # bpy.data.meshes.remove(mesh)
-        return length
-    
+
     @staticmethod
     def lenghtOfPath(obj):
         length = 0
@@ -302,6 +289,10 @@ class ConstructManager:
     @classmethod
     def startRecord(cls):
         cls.file = open( os.path.join(bpy.path.abspath(cls.pathToStore), "dataset.txt"), "w+")
+        now = datetime.now()
+        header = "synthetic dataset created on {} \nImageFile, Camera Position [X Y Z W P Q R] \n\n".format(now)
+        cls.file.write(header)
+        
         cls.currentFrame = 0
         cls.records = True 
         cls.resetFrameSettings()
@@ -442,7 +433,7 @@ def onFrameChanged(scene):
                     ConstructManager.takePictures(location)
     
     # cancel / stop animation after finishing
-    if scene.frame_current >= ConstructManager.keypoints:
+    if ConstructManager.records and scene.frame_current >= ConstructManager.keypoints:
         ConstructManager.stopRecord()
         
     return None
@@ -632,7 +623,7 @@ class RenderImagesAndSaveOperator(Operator):
     def poll(cls, context):
         scene = context.scene
         settings = scene.ccSettings
-        return ConstructManager.canTakePictures() and ConstructManager.pathToStore
+        return ConstructManager.canTakePictures() and ConstructManager.pathToStore and os.path.exists(ConstructManager.pathToStore)
 
     def execute(self, context):
         ConstructManager.startRecord()
@@ -735,6 +726,7 @@ class CameraConstructPanel(Panel):
     bl_space_type = "VIEW_3D"   
     bl_region_type = "TOOLS"    
     bl_category = "Camera Construct"
+    # bl_context = "object"
 
     @classmethod
     def poll(self,context):

@@ -8,7 +8,8 @@ class BaseOptions():
         self.opt = None
 
     def initialize(self):
-        self.parser.add_argument("--dataroot", required=True, help="path to images (should have dataset.txt and subfolder img)")
+        self.parser.add_argument("-r","--dataroot", required=True, help="path to images (should have dataset.txt and subfolder img)")
+        self.parser.add_argument("-s", "--dataset", type=str, default="dataset.txt", help="dataset file")
 
 
 
