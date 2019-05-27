@@ -301,7 +301,7 @@ class ConstructManager:
         
     @classmethod
     def startRecord(cls):
-        cls.file = open( os.path.join(bpy.path.abspath(cls.pathToStore), "data.txt"), "w+")
+        cls.file = open( os.path.join(bpy.path.abspath(cls.pathToStore), "dataset.txt"), "w+")
         cls.currentFrame = 0
         cls.records = True 
         cls.resetFrameSettings()
