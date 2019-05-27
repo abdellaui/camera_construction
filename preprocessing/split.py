@@ -1,7 +1,7 @@
 from options import SplitOptions
 import os
 import numpy as np
-import datetime
+from datetime import datetime
 
 opt = SplitOptions().parse()
 root = opt.dataroot

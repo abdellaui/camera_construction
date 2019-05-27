@@ -12,7 +12,7 @@ bl_info = {
 import bpy
 import math
 import os
-import datetime
+from datetime import datetime
 
 from bpy.app.handlers import persistent
 
@@ -623,7 +623,9 @@ class RenderImagesAndSaveOperator(Operator):
     def poll(cls, context):
         scene = context.scene
         settings = scene.ccSettings
-        return ConstructManager.canTakePictures() and ConstructManager.pathToStore and os.path.exists(ConstructManager.pathToStore)
+        return ConstructManager.canTakePictures() \
+                and ConstructManager.pathToStore \
+                and os.path.exists(bpy.path.abspath(ConstructManager.pathToStore))
 
     def execute(self, context):
         ConstructManager.startRecord()
@@ -755,7 +757,6 @@ class CameraConstructPanel(Panel):
         layout = self.layout
         scene = context.scene
         settings = scene.ccSettings
-
         box.prop_search(settings, "currentConstruct", scene, "objects")
 
         if ConstructManager.cc and ConstructManager.cc.isValid():
@@ -860,7 +861,6 @@ def register():
     bpy.types.Scene.listIndex = IntProperty(name = "Index for listOfPoints", default = 0)
     bpy.app.handlers.frame_change_pre.clear()
     bpy.app.handlers.frame_change_pre.append(onFrameChanged)
-
     
 def unregister():
     bpy.utils.unregister_module(__name__)

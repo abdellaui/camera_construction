@@ -1,7 +1,7 @@
 from options import FilterOptions
 import os
 import numpy as np
-import datetime
+from datetime import datetime
 import cv2
 import shutil
 
