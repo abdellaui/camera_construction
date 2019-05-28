@@ -262,9 +262,9 @@ class LampManager:
 
     @staticmethod
     def makeGrid(callback_fn, name="LampGrid"):
-        currentPosition = bpy.context.scene.cursor_location
         scene = bpy.context.scene
         settings = scene.lgSettings
+        currentPosition = settings.position
         factor = -1 if settings.directionRows else 1
         cubeObj = bpy.data.objects.new(name, None)
         cubeObj.location = currentPosition
@@ -293,7 +293,7 @@ class LampManager:
 
 
         lampName = "Lamp[{:03}][{:03}]".format(r,c)
-        lamp = bpy.data.lamps.new(lampName, type = "HEMI")
+        lamp = bpy.data.lamps.new(lampName, type = "AREA")
         lampObj = bpy.data.objects.new(lampName, lamp)
 
         if settings.sampleOfLamp \
@@ -566,6 +566,14 @@ class LampSettings(PropertyGroup):
         description="Sample or configured lamp object",
         default="",
         )
+    position = FloatVectorProperty(
+        name="Position",
+        description="Spawn position",        
+        default = (0.0, 0.0, 0.0),
+        subtype = "XYZ",
+        size = 3,
+        update = onUpdateLampSettings
+    )    
     rows = IntProperty(
         name = "Rows",
         description="Rows of lamp",
@@ -758,19 +766,21 @@ class GenerateLampOperator(Operator):
         LampManager.generate()
         return {"FINISHED"}
 
-"""
-class PreviewLampOperator(Operator):
-    bl_idname = "sahin.preview_lamp_operator"
-    bl_label = "Preview lamp grid"
+
+class TransferPositionLampOperator(Operator):
+    bl_idname = "sahin.transfer_position_lamp_operator"
+    bl_label = "Cursor position"
 
     @classmethod
     def poll(cls, context):
-        return context.mode == "OBJECT"
+        return context and bpy.context.scene and bpy.context.scene.cursor_location
     
     def execute(self, context):
-        LampManager.preview()
+        scene = context.scene
+        settings = scene.lgSettings
+        settings.position = bpy.context.scene.cursor_location
         return {"FINISHED"}
-"""
+
 
 class GenerateConstructOperator(Operator):
     bl_idname = "sahin.generate_construct_operator"
@@ -1047,6 +1057,9 @@ class LampGridPanel(Panel):
         if settings.hasSampleOfLamp:
             row.prop_search(settings, "sampleOfLamp", scene, "objects")
         layout.separator()
+        row = box.row()
+        row.prop(settings, "position")
+        row.operator(TransferPositionLampOperator.bl_idname, icon="LOAD_FACTORY")
         box.prop(settings, "rows")
         box.prop(settings, "cols")
         if settings.rows > 1:
@@ -1061,7 +1074,6 @@ class LampGridPanel(Panel):
 
         row = box.row()  
         row.operator(GenerateLampOperator.bl_idname, icon="ZOOMIN")
-        row.operator(PreviewLampOperator.bl_idname, icon="RESTRICT_VIEW_OFF")
 
 
 
@@ -1081,6 +1093,7 @@ def register():
     
 def unregister():
     bpy.utils.unregister_module(__name__)
+    del bpy.types.Scene.lgSettings
     del bpy.types.Scene.ccSettings
     del bpy.types.Scene.listOfPoints
     del bpy.types.Scene.listIndex
