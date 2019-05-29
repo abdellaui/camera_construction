@@ -1,6 +1,6 @@
 bl_info = {
-    "name": "Camera Construct",
-    "description": "Camera Construct",
+    "name": "Camera Construct (dataset vizualizer)",
+    "description": "Camera Construct (dataset vizualizer)",
     "author": "Abdullah Sahin",
     "version": (0, 0, 2),
     "blender": (2, 79, 0),
@@ -38,38 +38,47 @@ from bpy.types import (Panel,
 # ------------------------------------------------------------------------
 #    Classes & Functions
 # ------------------------------------------------------------------------
-def onUpdateLampSettings(self, context):
-    PointManager.preview()
+def onUpdateVizualizerSettings(self, context):
+    if  bpy.context and bpy.context.scene and bpy.context.scene.cursor_location:
+        scene = bpy.context.scene
+        settings = scene.dsSettings
+        bpy.context.scene.cursor_location = settings.position
+    DatasetVizualizerManager.preview()
     return None
 
-class PointManager:
+class DatasetVizualizerManager:
 
     previewObj = None
     loaded = False
     pointArray = []
 
     @classmethod
-    def makeGrid(cls, name="PointPath"):
+    def makeGrid(cls, name="Root_CameraDataset"):
         scene = bpy.context.scene
-        settings = scene.ppSettings
+        settings = scene.dsSettings
         currentPosition = settings.position
-        cubeObj = bpy.data.objects.new(name, None)
-        cubeObj.location = currentPosition
-        cubeObj.empty_draw_size = 0.1
-        cubeObj.empty_draw_type = "SPHERE"
-        scene.objects.link(cubeObj)
+        sphereObj = bpy.data.objects.new(name, None)
+        sphereObj.location = currentPosition
+        sphereObj.empty_draw_size = 0.1
+        sphereObj.empty_draw_type = "SPHERE"
+        scene.objects.link(sphereObj)
 
         for i, r in enumerate(cls.pointArray):
-            rowCubeName = "LampRow[{:03}]".format(i)
-            rowCubeObj = bpy.data.objects.new(rowCubeName, None)
-            rowCubeObj.empty_draw_size = 0.1
-            rowCubeObj.empty_draw_type = "CUBE"
-            rowCubeObj.location.x += float(r[0])
-            rowCubeObj.location.y += float(r[1])
-            rowCubeObj.location.z += float(r[2])
-            rowCubeObj.parent = cubeObj
-            scene.objects.link(rowCubeObj)
-        return cubeObj
+            cameraName = r[0]
+            camera = bpy.data.cameras.new(cameraName)
+            
+            camObj = bpy.data.objects.new(cameraName, camera)
+            camObj.location.x += float(r[1])
+            camObj.location.y += float(r[2])
+            camObj.location.z += float(r[3])
+            camObj.rotation_mode = 'QUATERNION'
+            camObj.rotation_quaternion.w = float(r[4])
+            camObj.rotation_quaternion.x = float(r[5])
+            camObj.rotation_quaternion.y = float(r[6])
+            camObj.rotation_quaternion.z = float(r[7])
+            camObj.parent = sphereObj
+            scene.objects.link(camObj)
+        return sphereObj
 
 
     @classmethod
@@ -86,16 +95,19 @@ class PointManager:
     def preview(cls):
         cls.clearPreview()
         if cls.loaded:
-            cls.previewObj = cls.makeGrid("PointPath")
+            cls.previewObj = cls.makeGrid()
 
     @classmethod
     def loadFile(cls):
         scene = bpy.context.scene
-        settings = scene.ppSettings
+        settings = scene.dsSettings
         fp = bpy.path.abspath(settings.loadPath)
         with open(fp) as csvfile:
             rdr = csv.reader(csvfile, delimiter=" ")
-            for item in rdr:
+            for i, item in enumerate(rdr):
+                if i < 3 or len(item) != 8:
+                    continue
+                
                 cls.pointArray.append(item)
             csvfile.close()
             cls.loaded = True
@@ -104,18 +116,18 @@ class PointManager:
 # ------------------------------------------------------------------------
 #    Scene Properties
 # ------------------------------------------------------------------------
-class LampSettings(PropertyGroup):
+class DatasetSettings(PropertyGroup):
     position = FloatVectorProperty(
         name="Position",
         description="Spawn position",        
         default = (0.0, 0.0, 0.0),
         subtype = "XYZ",
         size = 3,
-        update = onUpdateLampSettings
+        update = onUpdateVizualizerSettings
     )
     loadPath = StringProperty(
-        name="Load csv from",
-        description="Absolute path from loading csv",
+        name="CSV File path",
+        description="Absolute path to CSV file",
         default = "",
         subtype= "FILE_PATH"
     )
@@ -124,36 +136,37 @@ class LampSettings(PropertyGroup):
 #    Operators
 # ------------------------------------------------------------------------
 
-class PreviewPointOperator(Operator):
-    bl_idname = "sahin.preview_point_operator"
-    bl_label = "Preview point path"
-
-    @classmethod
-    def poll(cls, context):
-        scene = context.scene
-        settings = scene.ppSettings
-        return context.mode == "OBJECT"
-    
-    def execute(self, context):
-        PointManager.preview()
-        return {"FINISHED"}
-
-
-class LoadFilePointOperator(Operator):
-    bl_idname = "sahin.transfer_position_position_operator"
+class TransferPositionDatasetOperator(Operator):
+    bl_idname = "sahin.transfer_position_dataset_operator"
     bl_label = "Cursor position"
 
     @classmethod
     def poll(cls, context):
+        return context.mode == "OBJECT" and bpy.context.scene.cursor_location
+    
+    def execute(self, context):
         scene = context.scene
-        settings = scene.ppSettings
+        settings = scene.dsSettings
+        settings.position = bpy.context.scene.cursor_location
+        DatasetVizualizerManager.preview()
+        return {"FINISHED"}
+
+
+class ShowDatasetOperator(Operator):
+    bl_idname = "sahin.show_dataset_operator"
+    bl_label = "Show dataset"
+
+    @classmethod
+    def poll(cls, context):
+        scene = context.scene
+        settings = scene.dsSettings
         return context and bpy.context.scene and bpy.context.scene.cursor_location and os.path.exists(bpy.path.abspath(settings.loadPath))
     
     def execute(self, context):
         scene = context.scene
-        settings = scene.ppSettings
-        PointManager.loadFile()
-        PointManager.preview()
+        settings = scene.dsSettings
+        DatasetVizualizerManager.loadFile()
+        DatasetVizualizerManager.preview()
         return {"FINISHED"}
 
 
@@ -162,9 +175,9 @@ class LoadFilePointOperator(Operator):
 # ------------------------------------------------------------------------    
     
 
-class PointPathPanel(Panel):
-    bl_idname = "sahin.point_path_panel"
-    bl_label = "Point Path Panel"
+class DatasetVizualizerPanel(Panel):
+    bl_idname = "sahin.dataset_vizualizer_panel"
+    bl_label = "Dataset Vizualizer"
     bl_space_type = "VIEW_3D"   
     bl_region_type = "TOOLS"    
     bl_category = "Camera Construct"
@@ -176,16 +189,16 @@ class PointPathPanel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        settings = scene.ppSettings
+        settings = scene.dsSettings
         box = layout.box()
 
         row = box.row()
         box.prop(settings, "loadPath")
         row.prop(settings, "position")
-        row.operator(PreviewPointOperator.bl_idname, icon="LOAD_FACTORY")
+        row.operator(TransferPositionDatasetOperator.bl_idname, icon="LOAD_FACTORY")
         
         row = box.row()  
-        row.operator(LoadFilePointOperator.bl_idname, icon="ZOOMIN")
+        row.operator(ShowDatasetOperator.bl_idname, icon="RESTRICT_VIEW_OFF")
 
 
 
@@ -196,11 +209,11 @@ class PointPathPanel(Panel):
 
 def register():
     bpy.utils.register_module(__name__)
-    bpy.types.Scene.ppSettings = PointerProperty(type=LampSettings)
+    bpy.types.Scene.dsSettings = PointerProperty(type=DatasetSettings)
     
 def unregister():
     bpy.utils.unregister_module(__name__)
-    del bpy.types.Scene.ppSettings
+    del bpy.types.Scene.dsSettings
     
 if __name__ == "__main__":
     register()

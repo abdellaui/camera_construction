@@ -23,9 +23,6 @@ def gragma(img):
     magnitude = np.sqrt(sobelX**2.0 + sobelY**2.0)
     return magnitude
 
-def edge(img):
-    return img
-
 def process(img):
     path = os.path.join(root, img)
     imgPath = os.path.join(pathToStore, img)
@@ -35,14 +32,14 @@ def process(img):
         
     if img_filter == "gradma": 
         img = gragma(img)
-    elif img_filter == "edge":
-        img = edge(img)
+    elif img_filter == "otherwise":
+        pass
         
     stored = cv2.imwrite(imgPath, img)
     print(stored, imgPath)
     
 def main():
-    if img_filter in ["gradma", "edge"]:
+    if img_filter in ["gradma"]:
         
         dataArray = np.loadtxt(datafile, dtype=str, delimiter=" ", skiprows=3, usecols = (0))
 
