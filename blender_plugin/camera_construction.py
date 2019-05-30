@@ -280,6 +280,9 @@ class ConstructManager:
 
     @classmethod
     def stopRecord(cls):
+        if cls.records:
+            print("RECORDING FINISHED")
+            
         if cls.file:
             cls.file.close()
             cls.file = None

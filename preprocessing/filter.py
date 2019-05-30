@@ -11,7 +11,7 @@ dataset = opt.dataset
 datafile = os.path.join(root, dataset)
 img_filter = opt.img_filter
 kernel_size= opt.kernel_size
-pathToStore = os.path.join(root , img_filter+ "_" +datetime.datetime.now().strftime('%y-%m-%d_%H-%M-%S'))
+pathToStore = os.path.join(root , img_filter+ "_" + datetime.now().strftime('%y-%m-%d_%H-%M-%S'))
 
 def mkdir(path):
     if not os.path.exists(path):

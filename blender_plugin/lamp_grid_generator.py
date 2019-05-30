@@ -57,36 +57,47 @@ class LampManager:
         scene = bpy.context.scene
         settings = scene.lgSettings
         currentPosition = settings.position
-        factor = -1 if settings.directionRows else 1
+        factorL = -1 if settings.directionLayers else 1
+        factorR = -1 if settings.directionRows else 1
         cubeObj = bpy.data.objects.new(name, None)
         cubeObj.location = currentPosition
         cubeObj.empty_draw_size = 0.4
         cubeObj.empty_draw_type = "CUBE"
         scene.objects.link(cubeObj)
+        for l in range(settings.layers):
+            layerCubeName = "LampLayer[{:03}]".format(l)
+            layerCubeObj = bpy.data.objects.new(layerCubeName, None)
+            layerCubeObj.empty_draw_size = 0.4
+            layerCubeObj.empty_draw_type = "CUBE"
+            layerCubeObj.location.z += l * settings.distanceLayers * factorL
+            layerCubeObj.parent = cubeObj
+            scene.objects.link(layerCubeObj)
+            for r in range(settings.rows):
+                rowCubeName = "LampRow[{:03}][{:03}]".format(l, r)
+                rowCubeObj = bpy.data.objects.new(rowCubeName, None)
+                rowCubeObj.empty_draw_size = 0.4
+                rowCubeObj.empty_draw_type = "CUBE"
+                rowCubeObj.location.x += r * settings.distanceRows * factorR
+                rowCubeObj.parent = layerCubeObj
+                scene.objects.link(rowCubeObj)
 
-        for r in range(settings.rows):
-            rowCubeName = "LampRow[{:03}]".format(r)
-            rowCubeObj = bpy.data.objects.new(rowCubeName, None)
-            rowCubeObj.empty_draw_size = 0.4
-            rowCubeObj.empty_draw_type = "CUBE"
-            rowCubeObj.location.x += r * settings.distanceRows * factor
-            rowCubeObj.parent = cubeObj
-            scene.objects.link(rowCubeObj)
-
-            for c in range(settings.cols):
-                callback_fn(cubeObj, rowCubeObj, r, c)
+                for c in range(settings.cols):
+                    callback_fn(cubeObj, layerCubeObj, rowCubeObj, l, r, c)
+                    
         return cubeObj
 
     @staticmethod
-    def createLamps(cubeObj, rowCubeObj, r, c):
+    def createLamps(cubeObj, layerCubeObj, rowCubeObj, l, r, c):
         scene = bpy.context.scene
         settings = scene.lgSettings
         factor = -1 if settings.directionColumns else 1
 
 
-        lampName = "Lamp[{:03}][{:03}]".format(r,c)
-        lamp = bpy.data.lamps.new(lampName, type = "AREA")
+        lampName = "Lamp[{:03}][{:03}][{:03}]".format(l ,r ,c)
+        lamp = bpy.data.lamps.new(lampName, type = "POINT")
         lampObj = bpy.data.objects.new(lampName, lamp)
+        lampObj.data.distance = 5.0
+        # lampObj.data.use_sphere = True
 
         if settings.sampleOfLamp \
             and scene.objects[settings.sampleOfLamp] \
@@ -98,12 +109,12 @@ class LampManager:
         scene.objects.link(lampObj)
 
     @staticmethod
-    def previewLamps(cubeObj, rowCubeObj, r, c):
+    def previewLamps(cubeObj, layerCubeObj, rowCubeObj, l, r, c):
         scene = bpy.context.scene
         settings = scene.lgSettings
         factor = -1 if settings.directionColumns else 1
         
-        colCubeName = "Lamp[{:03}][{:03}]".format(r,c)
+        colCubeName = "Lamp[{:03}][{:03}][{:03}]".format(l, r, c)
         colCubeObj = bpy.data.objects.new(colCubeName, None)
         colCubeObj.empty_draw_size = 0.4
         colCubeObj.empty_draw_type = "CUBE"
@@ -111,14 +122,17 @@ class LampManager:
         colCubeObj.parent = rowCubeObj
         scene.objects.link(colCubeObj)
 
+    @staticmethod
+    def removeRecrusion(obj):
+        if obj:
+            for child in obj.children:
+                LampManager.removeRecrusion(child)
+            bpy.data.objects.remove(obj)
+            
     @classmethod
     def clearPreview(cls):
-        if cls.previewObj:
-            for child in cls.previewObj.children:
-                for childchild in child.children:
-                    bpy.data.objects.remove(childchild)
-                bpy.data.objects.remove(child)
-            bpy.data.objects.remove(cls.previewObj)
+        if cls.previewObj: 
+            LampManager.removeRecrusion(cls.previewObj)
             cls.previewObj = None
 
     @classmethod
@@ -155,9 +169,17 @@ class LampSettings(PropertyGroup):
         size = 3,
         update = onUpdateLampSettings
     )    
+    layers = IntProperty(
+        name = "Layers",
+        description="Layers of grid",
+        default = 1,
+        min = 1,
+        max = 100,
+        update = onUpdateLampSettings
+        )
     rows = IntProperty(
         name = "Rows",
-        description="Rows of lamp",
+        description="Rows per grid",
         default = 1,
         min = 1,
         max = 100,
@@ -165,13 +187,21 @@ class LampSettings(PropertyGroup):
         )
     cols = IntProperty(
         name = "Columns",
-        description="Columns of lamp",
+        description="Columns per grid",
         default = 1,
         min = 1,
         max = 100,
         update = onUpdateLampSettings
         )
-
+    
+    distanceLayers = FloatProperty(
+        name = "Distance per layer",
+        description = "Distance per layer",
+        default = 5,
+        min = 0.01,
+        update = onUpdateLampSettings
+        )
+    
     distanceRows = FloatProperty(
         name = "Distance per row",
         description = "Distance per row",
@@ -187,7 +217,14 @@ class LampSettings(PropertyGroup):
         min = 0.01,
         update = onUpdateLampSettings
         )
-
+    
+    directionLayers = BoolProperty(
+        name = "Flip direction",
+        description = "Grow on the opposite direction",
+        default = False,
+        update = onUpdateLampSettings
+    )
+    
     directionRows = BoolProperty(
         name = "Flip direction",
         description = "Grow on the opposite direction",
@@ -201,6 +238,7 @@ class LampSettings(PropertyGroup):
         default = False,
         update = onUpdateLampSettings
     )
+    
 
 
 # ------------------------------------------------------------------------
@@ -267,8 +305,15 @@ class LampGridPanel(Panel):
         row = box.row()
         row.prop(settings, "position")
         row.operator(TransferPositionLampOperator.bl_idname, icon="LOAD_FACTORY")
+        box.prop(settings, "layers")
         box.prop(settings, "rows")
         box.prop(settings, "cols")
+        
+        if settings.layers > 1:
+            row = box.row()
+            row.prop(settings, "distanceLayers")
+            row.prop(settings, "directionLayers")
+            
         if settings.rows > 1:
             row = box.row()
             row.prop(settings, "distanceRows")
@@ -278,7 +323,8 @@ class LampGridPanel(Panel):
             row = box.row()
             row.prop(settings, "distanceColumns")
             row.prop(settings, "directionColumns")
-
+            
+            
         row = box.row()  
         row.operator(GenerateLampOperator.bl_idname, icon="ZOOMIN")
 
