@@ -89,7 +89,7 @@ class CameraConstruct:
         instance.pathObj.name = "CameraConstruct"
 
         # create cube
-        bpy.ops.object.empty_add(type="CUBE", radius=0.2)
+        bpy.ops.object.empty_add(location=currentPosition, type="CUBE", radius=0.2)
         instance.cubeObj = bpy.context.object
         instance.cubeObj.name = "CameraRootCube"
 
@@ -316,7 +316,7 @@ class ConstructManager:
             print("{}% \t\t {:06} / {:06}".format(round(cls.currentFrame/amount*100,2), cls.currentFrame, amount))
             fileName = "{:06}".format(cls.currentFrame)
             fileName = os.path.join("img", fileName)
-            groundtruth = Utils.generatateGroundTruthString(fileName, location, obj.rotation_quaternion)
+            groundtruth = Utils.generatateGroundTruthString(fileName, location, obj.matrix_world.to_quaternion())
             cls.file.write(groundtruth+"\n")
 
             # set scenes camera and output filename
