@@ -17,6 +17,13 @@ def mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+
+def gragma2(img):
+    sobelX = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=kernel_size)
+    sobelY = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=kernel_size)
+    magnitude = np.sqrt(sobelX**2.0 + sobelY**2.0)
+    return magnitude
+
 def gragma(img):
     sobelX = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=kernel_size)
     sobelY = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=kernel_size)
@@ -32,14 +39,15 @@ def process(img):
         
     if img_filter == "gradma": 
         img = gragma(img)
-    elif img_filter == "otherwise":
+    elif img_filter == "gragma2":
+        img = gragma2(img)
         pass
         
     stored = cv2.imwrite(imgPath, img)
     print(stored, imgPath)
     
 def main():
-    if img_filter in ["gradma"]:
+    if img_filter in ["gradma", "gragma2"]:
         
         dataArray = np.loadtxt(datafile, dtype=str, delimiter=" ", skiprows=3, usecols = (0))
 

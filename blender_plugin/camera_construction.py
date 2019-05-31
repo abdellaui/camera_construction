@@ -70,7 +70,11 @@ class Utils:
     def generatateGroundTruthString(fileName, location, quaternion):
         x, y ,z = location
         w, p, q, r = quaternion
-        return "{}.png {} {} {} {} {} {} {}".format(fileName, x,y,z,w,p,q,r)
+        precission = 6
+        #return "{}.png {} {} {} {} {} {} {}".format(fileName, x,y,z,w,p,q,r)
+        return "{}.png {} {} {} {} {} {} {}".format(fileName, \
+                                                    round(x, precission), round(y, precission), round(z, precission), \
+                                                    round(w, precission), round(p, precission), round(q, precission), round(r, precission))
     
     
 class CameraConstruct:
@@ -281,7 +285,7 @@ class ConstructManager:
     @classmethod
     def stopRecord(cls):
         if cls.records:
-            print("RECORDING FINISHED")
+            print("IMAGE RENDERING FINISHED")
             
         if cls.file:
             cls.file.close()
