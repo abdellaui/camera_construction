@@ -103,6 +103,16 @@ class CameraConstruct:
         bpy.context.scene.objects.active = instance.pathObj
         bpy.ops.object.parent_set(type="FOLLOW")
 
+        # add constrait
+        constrait = instance.cubeObj.constraints.new(type='LIMIT_ROTATION')
+        constrait.name = "LIMIT_ROTATION"
+        constrait.min_x = math.radians(0)
+        constrait.max_x = math.radians(0)
+        constrait.min_y = math.radians(-90)
+        constrait.max_y = math.radians(-90)
+        constrait.min_z = math.radians(-90)
+        constrait.max_z = math.radians(-90)
+        
         # correct the rotation and location of cubeObj inclusive cameras
         instance.cubeObj.location.x -= 2
         instance.createCameras()
@@ -240,23 +250,22 @@ class CameraConstruct:
         
     def configureCubeRotation(self):
         if not self.cubeObj or not self.pathObj:
-            return 0
-
-        usePathFollow = self.pathObj.data.use_path_follow 
+            return None
         
-        self.cubeObj.rotation_mode = "ZYX"
-        if(usePathFollow):
-            self.cubeObj.rotation_euler = Utils.rotationInDegToRad(y = -90, z = -90)
-        else:
-            self.cubeObj.rotation_euler = Utils.rotationInDegToRad(x = 90, y = 180)
-            
-    def configure(self):
         scene = bpy.context.scene
         settings = scene.ccSettings
-        usePathFollow = settings.usePathFollow
+        usePathFollowAxes = list(settings.usePathFollowAxes)
+        self.cubeObj.constraints["LIMIT_ROTATION"].use_limit_x = not usePathFollowAxes[0]
+        self.cubeObj.constraints["LIMIT_ROTATION"].use_limit_y = not usePathFollowAxes[1]
+        self.cubeObj.constraints["LIMIT_ROTATION"].use_limit_z = not usePathFollowAxes[2]
         
+        self.cubeObj.rotation_mode = "ZYX"
+        self.cubeObj.rotation_euler = Utils.rotationInDegToRad(y = -90, z = -90)
+        
+            
+    def configure(self):
         self.pathObj.data.path_duration = ConstructManager.keypoints
-        self.pathObj.data.use_path_follow = usePathFollow
+        self.pathObj.data.use_path_follow = True
         self.configureCubeRotation()
         self.calcPathLength()
         
@@ -285,7 +294,7 @@ class ConstructManager:
     @classmethod
     def stopRecord(cls):
         if cls.records:
-            print("IMAGE RENDERING FINISHED")
+            print("IMAGE RENDERING STOPPED")
             
         if cls.file:
             cls.file.close()
@@ -377,20 +386,23 @@ class ConstructManager:
     def applySettings(cls):
         scene = bpy.context.scene
         settings = scene.ccSettings
-        
-        usePathFollow = settings.usePathFollow
         picturePerUnit = settings.picturePerUnit
-        cls.cc.configure()
+        
         pathLength = cls.cc.getPathLength()
         cls.keypoints = math.ceil(pathLength / picturePerUnit)
         cls.pathToStore = settings.pathToStore
+        cls.refreshFrameEnd()
+        cls.cc.configure()
         
     @classmethod
     def resetFrameSettings(cls):
         cls.cc.pathObj.data.eval_time = 0
         bpy.data.scenes[cls.sceneKey].frame_start = 0
-        bpy.data.scenes[cls.sceneKey].frame_end = cls.keypoints
+        cls.refreshFrameEnd()
 
+    @classmethod
+    def refreshFrameEnd(cls):
+        bpy.data.scenes[cls.sceneKey].frame_end = cls.keypoints
         
 
     @classmethod
@@ -539,10 +551,11 @@ class ConstructSettings(PropertyGroup):
         update = onUpdateSettings
         )
 
-    usePathFollow = BoolProperty(
-        name="Path rotation follow",
-        description="Camera construct follows the rotation on the path",
-        default = False,
+    usePathFollowAxes = BoolVectorProperty(
+        name="Path rotation follow on axes",
+        description="Camera construct follows the axes rotation on the path",
+        default = (True, True, True),
+        subtype = "XYZ",
         update = onUpdateSettings
         )
 
@@ -649,7 +662,19 @@ class GenerateConstructOperator(Operator):
         
         return {"FINISHED"}
 
-class RenderImagesAndSaveOperator(Operator):
+class RenderImagesCancelOperator(Operator):
+    bl_idname = "sahin.render_images_cancel_operator"
+    bl_label = "Cancel rendering"
+
+    @classmethod
+    def poll(cls, context):
+        return ConstructManager.records
+
+    def execute(self, context):
+        ConstructManager.stopRecord()
+        return {"FINISHED"}
+    
+class RenderImagesSaveOperator(Operator):
     bl_idname = "sahin.render_images_and_save_operator"
     bl_label = "Render images and save"
 
@@ -857,11 +882,13 @@ class CameraConstructPanel(Panel):
         box.label(text="Render options")
         if not ConstructManager.records:
             box.prop(settings, "picturePerUnit")
-            box.prop(settings, "usePathFollow")
+            row = box.row()
+            row.prop(settings, "usePathFollowAxes")
             box.prop(settings, "pathToStore")
+            box.operator(RenderImagesSaveOperator.bl_idname, icon="RENDER_STILL")
         else:
             box.label(text="{}%  {} / {}".format(round(ConstructManager.currentFrame/amountOfPictures*100,2), ConstructManager.currentFrame, amountOfPictures), icon="SCRIPT")
-        box.operator(RenderImagesAndSaveOperator.bl_idname, icon="RENDER_STILL")
+            box.operator(RenderImagesCancelOperator.bl_idname, icon="CANCEL")
         
     def draw(self, context):
         layout = self.layout
