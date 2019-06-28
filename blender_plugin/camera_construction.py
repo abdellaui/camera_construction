@@ -326,8 +326,8 @@ class ConstructManager:
         for obj in cls.cc.cameras:
             cls.currentFrame += 1
 
-            print("{}% \t\t {:06} / {:06}".format(round(cls.currentFrame/amount*100,2), cls.currentFrame, amount))
-            fileName = "{:06}".format(cls.currentFrame)
+            print("{}% \t\t {:05} / {:05}".format(round(cls.currentFrame/amount*100,2), cls.currentFrame, amount))
+            fileName = "{:05}".format(cls.currentFrame)
             fileName = os.path.join("img", fileName)
             groundtruth = Utils.generatateGroundTruthString(fileName, location, obj.matrix_world.to_quaternion())
             cls.file.write(groundtruth+"\n")
