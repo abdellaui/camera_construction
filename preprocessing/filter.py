@@ -25,15 +25,17 @@ def gragma2(img):
     return magnitude
 
 def gragma(img):
-    sobelX = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=kernel_size)
-    sobelY = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=kernel_size)
-    magnitude = np.sqrt(sobelX**2.0 + sobelY**2.0)
-    return magnitude
+    gx = cv2.Sobel(img, cv2.CV_32F, 0, 1, ksize=kernel_size, scale=0.2)
+    gy = cv2.Sobel(img, cv2.CV_32F, 1, 0,  ksize=kernel_size,  scale=0.2)
+    mag, ang = cv2.cartToPolar(gx, gy)
+    mag[mag<64] = 64
+    return cv2.cvtColor(mag, cv2.COLOR_GRAY2BGR)
+
 
 def process(img):
     path = os.path.join(root, img)
     imgPath = os.path.join(pathToStore, img)
-    img = cv2.imread(path)
+    img = cv2.imread(path, False)
     if img.size == 0:
         return print("{} not found".format(path))
         
