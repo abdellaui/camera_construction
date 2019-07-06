@@ -634,7 +634,7 @@ class TransferPositionCameraOperator(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.mode == "OBJECT" and bpy.context.scene.cursor_location
+        return context and context.mode == "OBJECT" and bpy.context.scene and bpy.context.scene.cursor_location
     
     def execute(self, context):
         scene = context.scene
