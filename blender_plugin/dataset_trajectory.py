@@ -93,7 +93,7 @@ class DatasetTrajectoryManager:
 
     @classmethod
     def preview(cls):
-        cls.clearPreview()
+        # cls.clearPreview()
         if cls.loaded:
             cls.previewObj = cls.makeGrid()
 
