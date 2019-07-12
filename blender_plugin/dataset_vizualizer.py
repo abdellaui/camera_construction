@@ -72,10 +72,10 @@ class DatasetVizualizerManager:
             camObj.location.y += float(r[2])
             camObj.location.z += float(r[3])
             camObj.rotation_mode = 'QUATERNION'
-            camObj.rotation_quaternion.x = float(r[4])
-            camObj.rotation_quaternion.y = float(r[5])
-            camObj.rotation_quaternion.z = float(r[6])
-            camObj.rotation_quaternion.w = float(r[7])
+            camObj.rotation_quaternion.w = float(r[4])
+            camObj.rotation_quaternion.x = float(r[5])
+            camObj.rotation_quaternion.y = float(r[6])
+            camObj.rotation_quaternion.z = float(r[7])
             camObj.parent = sphereObj
             scene.objects.link(camObj)
         return sphereObj
