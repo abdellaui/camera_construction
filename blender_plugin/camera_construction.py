@@ -236,14 +236,27 @@ class CameraConstruct:
         allowX = allowsAxes[0]
         allowY = allowsAxes[1]
         allowZ = allowsAxes[2]
-        for x in range(-stepRange, stepRange+1, stepSize):
-            if x == 0 or allowX:
-                for y in range(-stepRange, stepRange+1, stepSize):
-                    if y == 0 or allowY:
-                        for z in range(-stepRange, stepRange+1, stepSize):
-                            if z == 0 or allowZ:
-                                self.addCamera(x, y, z)
-    
+        
+        if settings.variationCombination:
+            for x in range(-stepRange, stepRange+1, stepSize):
+                if x == 0 or allowX:
+                    for y in range(-stepRange, stepRange+1, stepSize):
+                        if y == 0 or allowY:
+                            for z in range(-stepRange, stepRange+1, stepSize):
+                                if z == 0 or allowZ:
+                                    self.addCamera(x, y, z)
+        else:
+            self.addCamera(0, 0, 0)
+            for x in range(-stepRange, stepRange+1, stepSize):
+                if x != 0 and allowX:
+                    self.addCamera(x, 0, 0)
+            for y in range(-stepRange, stepRange+1, stepSize):
+                if y != 0 and allowY:
+                    self.addCamera(0, y, 0)
+            for z in range(-stepRange, stepRange+1, stepSize):
+                if z != 0 and allowZ:
+                    self.addCamera(0, 0, z)
+        
                
     def calcPathLength(self):
         self.pathLength = Utils.lenghtOfPath(self.pathObj)
@@ -535,7 +548,11 @@ class ConstructSettings(PropertyGroup):
         min = 1,
         max = 180
         )
-
+    variationCombination = BoolProperty(
+        name = "Varying axes combination",
+        description="Shows axes wich will get varying rotations",
+        default = False
+        )
     variationOfAxes = BoolVectorProperty(
         name = "Varying axes",
         description="Shows axes wich will get varying rotations",
@@ -805,8 +822,13 @@ class CameraConstructPanel(Panel):
         if settings.hasSampleOfCamera:
             row.prop_search(settings, "sampleOfCamera", scene, "objects")
         layout.separator()
+        
+        row = box.row()
+        row.prop(settings, "variationCombination")
+        
         row = box.row()
         row.prop(settings, "variationOfAxes")
+        
         if settings.variationOfAxes[0] or settings.variationOfAxes[1] or settings.variationOfAxes[2]:
             box.prop(settings, "steps")
             if settings.steps > 0:
