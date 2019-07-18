@@ -274,7 +274,9 @@ class CameraConstruct:
         
         self.cubeObj.rotation_mode = "ZYX"
         self.cubeObj.rotation_euler = Utils.rotationInDegToRad(y = -90, z = -90)
-        
+    
+    def getCameraAmount(self):
+        return len(self.cameras)
             
     def configure(self):
         self.pathObj.data.path_duration = ConstructManager.keypoints
@@ -319,9 +321,10 @@ class ConstructManager:
     def startRecord(cls):
         cls.file = open( os.path.join(bpy.path.abspath(cls.pathToStore), "dataset.txt"), "a")
         
-        cls.currentFrame = bpy.data.scenes[cls.sceneKey].frame_current
+        _currentFrame = bpy.data.scenes[cls.sceneKey].frame_current
+        cls.currentFrame = _currentFrame * cls.cc.getCameraAmount()
         cls.records = True 
-        cls.resetFrameSettings(cls.currentFrame)
+        cls.resetFrameSettings(_currentFrame)
 
         if cls.currentFrame == 0:
             now = datetime.now()
@@ -413,7 +416,7 @@ class ConstructManager:
     @classmethod
     def resetFrameSettings(cls, frame=0):
         cls.cc.pathObj.data.eval_time = frame
-        #bpy.data.scenes[cls.sceneKey].frame_start = frame
+        bpy.data.scenes[cls.sceneKey].frame_start = 0
         cls.refreshFrameEnd()
 
     @classmethod
