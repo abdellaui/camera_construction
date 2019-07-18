@@ -317,14 +317,17 @@ class ConstructManager:
         
     @classmethod
     def startRecord(cls):
-        cls.file = open( os.path.join(bpy.path.abspath(cls.pathToStore), "dataset.txt"), "w+")
-        now = datetime.now()
-        header = "synthetic dataset created on {} \nImageFile, Camera Position [X Y Z W P Q R] \n\n".format(now)
-        cls.file.write(header)
+        cls.file = open( os.path.join(bpy.path.abspath(cls.pathToStore), "dataset.txt"), "a")
         
-        cls.currentFrame = 0
+        cls.currentFrame = bpy.data.scenes[cls.sceneKey].frame_start
         cls.records = True 
-        cls.resetFrameSettings()
+        cls.resetFrameSettings(currentFrame)
+
+        if cls.currentFrame == 0:
+            now = datetime.now()
+            header = "synthetic dataset created on {} \nImageFile, Camera Position [X Y Z W P Q R] \n\n".format(now)
+            cls.file.write(header)
+
         bpy.ops.screen.animation_cancel()
         bpy.ops.screen.animation_play() 
     
@@ -408,9 +411,9 @@ class ConstructManager:
         cls.cc.configure()
         
     @classmethod
-    def resetFrameSettings(cls):
-        cls.cc.pathObj.data.eval_time = 0
-        bpy.data.scenes[cls.sceneKey].frame_start = 0
+    def resetFrameSettings(cls, frame=0):
+        cls.cc.pathObj.data.eval_time = frame
+        #bpy.data.scenes[cls.sceneKey].frame_start = frame
         cls.refreshFrameEnd()
 
     @classmethod
