@@ -319,7 +319,7 @@ class ConstructManager:
     def startRecord(cls):
         cls.file = open( os.path.join(bpy.path.abspath(cls.pathToStore), "dataset.txt"), "a")
         
-        cls.currentFrame = bpy.data.scenes[cls.sceneKey].frame_start
+        cls.currentFrame = bpy.data.scenes[cls.sceneKey].frame_current
         cls.records = True 
         cls.resetFrameSettings(cls.currentFrame)
 
