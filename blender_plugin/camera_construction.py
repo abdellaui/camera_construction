@@ -321,7 +321,7 @@ class ConstructManager:
         
         cls.currentFrame = bpy.data.scenes[cls.sceneKey].frame_start
         cls.records = True 
-        cls.resetFrameSettings(currentFrame)
+        cls.resetFrameSettings(cls.currentFrame)
 
         if cls.currentFrame == 0:
             now = datetime.now()
