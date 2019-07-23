@@ -99,6 +99,7 @@ class DatasetTrajectoryManager:
 
     @classmethod
     def loadFile(cls):
+        cls.pointArray = []
         scene = bpy.context.scene
         settings = scene.dtSettings
         fp = bpy.path.abspath(settings.loadPath)

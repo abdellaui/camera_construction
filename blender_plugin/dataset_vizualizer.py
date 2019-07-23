@@ -99,6 +99,7 @@ class DatasetVizualizerManager:
 
     @classmethod
     def loadFile(cls):
+        cls.pointArray = []
         scene = bpy.context.scene
         settings = scene.dsSettings
         fp = bpy.path.abspath(settings.loadPath)
